@@ -8,9 +8,13 @@ import com.amazonaws.services.ec2.model.DescribeInstancesRequest;
 import com.amazonaws.services.ec2.model.DescribeInstancesResult;
 import com.amazonaws.services.ec2.model.Instance;
 import com.amazonaws.services.ec2.model.InstanceType;
+import com.amazonaws.services.ec2.model.RebootInstancesRequest;
+import com.amazonaws.services.ec2.model.RebootInstancesResult;
 import com.amazonaws.services.ec2.model.Reservation;
 import com.amazonaws.services.ec2.model.RunInstancesRequest;
 import com.amazonaws.services.ec2.model.RunInstancesResult;
+import com.amazonaws.services.ec2.model.StartInstancesRequest;
+import com.amazonaws.services.ec2.model.StopInstancesRequest;
 
 public class awsTest {
 	/*
@@ -46,7 +50,11 @@ public class awsTest {
 		init();
 		Scanner scanMenu = new Scanner(System.in);
 		Scanner scanId = new Scanner(System.in);
+		
+		String instanceId;
+		String imgId;
 		int number = 0;
+		
 		while(true)
 		{
 			System.out.println(" ");
@@ -71,11 +79,38 @@ public class awsTest {
 			case 1:
 				listInstances();
 				break;
+			case 2:
+				break;
 			case 3:
 				System.out.println("enter the instance id : ");
 				
-				String instanceId = scanId.next();
+				instanceId = scanId.next();
 				startInstance(instanceId);
+				break;
+			case 4:
+				break;
+			case 5:
+				System.out.println("enter the instance id : ");
+				
+				instanceId = scanId.next();
+				stopInstance(instanceId);
+				break;
+			case 6:
+				System.out.println("enter the image id : ");
+				
+				imgId = scanId.next();
+				createInstance(imgId);
+				break;
+			case 7:
+				System.out.println("enter the instance id : ");
+				
+				instanceId = scanId.next();
+				rebootInstance(instanceId);
+				break;
+			case 8:
+				break;
+			case 99:
+				System.exit(0);
 				break;
 			}
 		}
@@ -111,11 +146,36 @@ public class awsTest {
 		}
 	}
 	
-	public static void startInstance(String id ) {
+	public static void startInstance(String id) {
 		System.out.println("start intance... [id:"+id+"]");
+	
+		StartInstancesRequest request = new StartInstancesRequest()
+			.withInstanceIds(id);
 		
+		ec2.startInstances(request);
+	}
+	
+	public static void stopInstance(String id) {
+		System.out.println("stop instance... [id:"+id+"]");
+		
+		StopInstancesRequest request = new StopInstancesRequest()
+			.withInstanceIds(id);
+		
+		ec2.stopInstances(request);
+	}
+	
+	public static void rebootInstance(String id) {
+		System.out.println("reboot instance... [id:"+id+"]");
+		
+		RebootInstancesRequest request = new RebootInstancesRequest()
+			.withInstanceIds(id);
+		
+		RebootInstancesResult response = ec2.rebootInstances(request);
+	}
+	
+	public static void createInstance(String imgId) {
 		RunInstancesRequest runInstancesRequest = new RunInstancesRequest();
-		runInstancesRequest.withImageId(id)
+		runInstancesRequest.withImageId(imgId)
         .withInstanceType(InstanceType.T2Micro)
         .withMinCount(1)
         .withMaxCount(1)
