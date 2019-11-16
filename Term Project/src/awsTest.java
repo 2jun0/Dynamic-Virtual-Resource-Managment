@@ -4,12 +4,18 @@ import com.amazonaws.AmazonClientException;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.services.ec2.AmazonEC2;
 import com.amazonaws.services.ec2.AmazonEC2ClientBuilder;
+import com.amazonaws.services.ec2.model.AvailabilityZone;
+import com.amazonaws.services.ec2.model.DescribeAvailabilityZonesResult;
+import com.amazonaws.services.ec2.model.DescribeImagesResult;
 import com.amazonaws.services.ec2.model.DescribeInstancesRequest;
 import com.amazonaws.services.ec2.model.DescribeInstancesResult;
+import com.amazonaws.services.ec2.model.DescribeRegionsResult;
+import com.amazonaws.services.ec2.model.Image;
 import com.amazonaws.services.ec2.model.Instance;
 import com.amazonaws.services.ec2.model.InstanceType;
 import com.amazonaws.services.ec2.model.RebootInstancesRequest;
 import com.amazonaws.services.ec2.model.RebootInstancesResult;
+import com.amazonaws.services.ec2.model.Region;
 import com.amazonaws.services.ec2.model.Reservation;
 import com.amazonaws.services.ec2.model.RunInstancesRequest;
 import com.amazonaws.services.ec2.model.RunInstancesResult;
@@ -80,6 +86,7 @@ public class awsTest {
 				listInstances();
 				break;
 			case 2:
+				availableZones();
 				break;
 			case 3:
 				System.out.println("enter the instance id : ");
@@ -88,6 +95,7 @@ public class awsTest {
 				startInstance(instanceId);
 				break;
 			case 4:
+				availableRegions();
 				break;
 			case 5:
 				System.out.println("enter the instance id : ");
@@ -108,6 +116,7 @@ public class awsTest {
 				rebootInstance(instanceId);
 				break;
 			case 8:
+				listImages();
 				break;
 			case 99:
 				System.exit(0);
@@ -146,6 +155,22 @@ public class awsTest {
 		}
 	}
 	
+	public static void availableZones() {
+		System.out.println("Available zones....");
+		
+		DescribeAvailabilityZonesResult zones_response = ec2.describeAvailabilityZones();
+
+		for(AvailabilityZone zone : zones_response.getAvailabilityZones()) {
+		    System.out.printf(
+		        "Found availability zone %s " +
+		        "with status %s " +
+		        "in region %s",
+		        zone.getZoneName(),
+		        zone.getState(),
+		        zone.getRegionName());
+		}
+	}
+	
 	public static void startInstance(String id) {
 		System.out.println("start intance... [id:"+id+"]");
 	
@@ -153,6 +178,18 @@ public class awsTest {
 			.withInstanceIds(id);
 		
 		ec2.startInstances(request);
+	}
+
+	public static void availableRegions() {
+		System.out.println("Available regions....");
+		
+		DescribeRegionsResult regions_response = ec2.describeRegions();
+
+		for(Region region : regions_response.getRegions()) {
+		    System.out.printf(
+		    		"Found region " + region.getRegionName() + " " +
+		    		"with endpoint " + region.getEndpoint());
+		}
 	}
 	
 	public static void stopInstance(String id) {
@@ -176,11 +213,27 @@ public class awsTest {
 	public static void createInstance(String imgId) {
 		RunInstancesRequest runInstancesRequest = new RunInstancesRequest();
 		runInstancesRequest.withImageId(imgId)
-        .withInstanceType(InstanceType.T2Micro)
-        .withMinCount(1)
-        .withMaxCount(1)
-        .withKeyName("ejun0")
-        .withSecurityGroups("launch-wizard-2");
+			.withInstanceType(InstanceType.T2Micro)
+			.withMinCount(1)
+			.withMaxCount(1)
+			.withKeyName("ejun0")
+			.withSecurityGroups("launch-wizard-2");
 		RunInstancesResult result = ec2.runInstances(runInstancesRequest);
+	}
+	
+	public static void listImages() {
+		DescribeImagesResult imageResult = ec2.describeImages();
+		
+		for(Image image : imageResult.getImages()) {
+			System.out.printf(
+					"[name] %s, " + 
+					"[id] %s, " +
+					"[type] %s, " +
+					"[state] %10s, ",
+					image.getName(),
+					image.getImageId(),
+					image.getImageType(),
+					image.getState());
+		}
 	}
 }
