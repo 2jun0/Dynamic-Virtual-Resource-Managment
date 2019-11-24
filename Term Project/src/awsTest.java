@@ -6,12 +6,14 @@ import com.amazonaws.services.ec2.AmazonEC2;
 import com.amazonaws.services.ec2.AmazonEC2ClientBuilder;
 import com.amazonaws.services.ec2.model.AvailabilityZone;
 import com.amazonaws.services.ec2.model.DescribeAvailabilityZonesResult;
+import com.amazonaws.services.ec2.model.DescribeImagesRequest;
 import com.amazonaws.services.ec2.model.DescribeImagesResult;
 import com.amazonaws.services.ec2.model.DescribeInstancesRequest;
 import com.amazonaws.services.ec2.model.DescribeInstancesResult;
 import com.amazonaws.services.ec2.model.DescribeRegionsResult;
 import com.amazonaws.services.ec2.model.Image;
 import com.amazonaws.services.ec2.model.Instance;
+import com.amazonaws.services.ec2.model.InstanceState;
 import com.amazonaws.services.ec2.model.InstanceType;
 import com.amazonaws.services.ec2.model.RebootInstancesRequest;
 import com.amazonaws.services.ec2.model.RebootInstancesResult;
@@ -21,6 +23,16 @@ import com.amazonaws.services.ec2.model.RunInstancesRequest;
 import com.amazonaws.services.ec2.model.RunInstancesResult;
 import com.amazonaws.services.ec2.model.StartInstancesRequest;
 import com.amazonaws.services.ec2.model.StopInstancesRequest;
+import com.amazonaws.services.ec2.model.TerminateInstancesRequest;
+
+class InstanceStates {
+	static final int PENDING = 0;
+	static final int RUNNING = 16;
+	static final int SHUTTING_DOWN = 32;
+	static final int TERMINATED = 48;
+	static final int STOPPING = 64;
+	static final int STOPPED = 80;
+}
 
 public class awsTest {
 	/*
@@ -71,10 +83,12 @@ public class awsTest {
 			System.out.println(" Cloud Computing, Computer Science Department ");
 			System.out.println(" at Chungbuk National University ");
 			System.out.println("------------------------------------------------------------");
-			System.out.println(" 1. list instance 2. available zones ");
-			System.out.println(" 3. start instance 4. available regions ");
-			System.out.println(" 5. stop instance 6. create instance ");
-			System.out.println(" 7. reboot instance 8. list images ");
+			System.out.println(" 1. list instance\t2. available zones ");
+			System.out.println(" 3. start instance\t4. available regions ");
+			System.out.println(" 5. stop instance\t6. create instance ");
+			System.out.println(" 7. reboot instance\t8. list images ");
+			System.out.println(" 9. start all instance\t10. stop all instance ");
+			System.out.println(" 11. terminate instance");
 			System.out.println(" 99. quit ");
 			System.out.println("------------------------------------------------------------");
 			System.out.print("Enter an integer: ");
@@ -118,10 +132,25 @@ public class awsTest {
 			case 8:
 				listImages();
 				break;
+			case 9:
+				startAllInstances();
+				break;
+			case 10:
+				stopAllInstances();
+				break;
+			case 11:
+				System.out.println("enter the instance id : ");
+				
+				instanceId = scanId.next();
+				terminateInstance(instanceId);
+				break;
 			case 99:
 				System.exit(0);
 				break;
 			}
+			
+			System.out.println("Enter any key...");
+			scanId.next();
 		}
 	}
 	
@@ -168,6 +197,7 @@ public class awsTest {
 		        zone.getZoneName(),
 		        zone.getState(),
 		        zone.getRegionName());
+		    System.out.println();
 		}
 	}
 	
@@ -179,6 +209,48 @@ public class awsTest {
 		
 		ec2.startInstances(request);
 	}
+	
+	public static void startAllInstances() {
+		System.out.println("start all instances....");
+		boolean done = false;
+		DescribeInstancesRequest request = new DescribeInstancesRequest();
+		while(!done) {
+			DescribeInstancesResult response = ec2.describeInstances(request);
+			for(Reservation reservation : response.getReservations()) {
+				for(Instance instance : reservation.getInstances()) {
+					
+					if(instance.getState().getCode() == InstanceStates.STOPPED) {
+						startInstance(instance.getInstanceId());
+					}
+				}
+			}
+			request.setNextToken(response.getNextToken());
+			if(response.getNextToken() == null) {
+				done = true;
+			}
+		}
+	}
+	
+	public static void stopAllInstances() {
+		System.out.println("stop all instances....");
+		boolean done = false;
+		DescribeInstancesRequest request = new DescribeInstancesRequest();
+		while(!done) {
+			DescribeInstancesResult response = ec2.describeInstances(request);
+			for(Reservation reservation : response.getReservations()) {
+				for(Instance instance : reservation.getInstances()) {
+					
+					if(instance.getState().getCode() == InstanceStates.RUNNING) {
+						stopInstance(instance.getInstanceId());
+					}
+				}
+			}
+			request.setNextToken(response.getNextToken());
+			if(response.getNextToken() == null) {
+				done = true;
+			}
+		}
+	}
 
 	public static void availableRegions() {
 		System.out.println("Available regions....");
@@ -187,8 +259,10 @@ public class awsTest {
 
 		for(Region region : regions_response.getRegions()) {
 		    System.out.printf(
-		    		"Found region " + region.getRegionName() + " " +
-		    		"with endpoint " + region.getEndpoint());
+	    		"Found region %s, with endpoint %s", 
+	    		region.getRegionName(), region.getEndpoint()
+    		);
+		    System.out.println();
 		}
 	}
 	
@@ -222,18 +296,30 @@ public class awsTest {
 	}
 	
 	public static void listImages() {
-		DescribeImagesResult imageResult = ec2.describeImages();
+		DescribeImagesRequest request = new DescribeImagesRequest();
+		DescribeImagesResult imageResult = ec2.describeImages(request);
 		
 		for(Image image : imageResult.getImages()) {
 			System.out.printf(
-					"[name] %s, " + 
-					"[id] %s, " +
-					"[type] %s, " +
-					"[state] %10s, ",
-					image.getName(),
-					image.getImageId(),
-					image.getImageType(),
-					image.getState());
+				"[name] %s, " + 
+				"[id] %s, " +
+				"[type] %s, " +
+				"[state] %10s, ",
+				image.getName(),
+				image.getImageId(),
+				image.getImageType(),
+				image.getState()
+			);
+			System.out.println();
 		}
+	}
+	
+	public static void terminateInstance(String id) {
+		System.out.println("terminate instance... [id:"+id+"]");
+		
+		TerminateInstancesRequest request = new TerminateInstancesRequest()
+				.withInstanceIds(id);
+		
+		ec2.terminateInstances(request);
 	}
 }
