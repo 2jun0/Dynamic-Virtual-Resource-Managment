@@ -11,6 +11,7 @@ import com.amazonaws.services.ec2.model.DescribeImagesResult;
 import com.amazonaws.services.ec2.model.DescribeInstancesRequest;
 import com.amazonaws.services.ec2.model.DescribeInstancesResult;
 import com.amazonaws.services.ec2.model.DescribeRegionsResult;
+import com.amazonaws.services.ec2.model.Filter;
 import com.amazonaws.services.ec2.model.Image;
 import com.amazonaws.services.ec2.model.Instance;
 import com.amazonaws.services.ec2.model.InstanceState;
@@ -296,7 +297,8 @@ public class awsTest {
 	}
 	
 	public static void listImages() {
-		DescribeImagesRequest request = new DescribeImagesRequest();
+		DescribeImagesRequest request = new DescribeImagesRequest()
+				.withFilters(new Filter().withName("is-public").withValues("false"));
 		DescribeImagesResult imageResult = ec2.describeImages(request);
 		
 		for(Image image : imageResult.getImages()) {
@@ -304,7 +306,7 @@ public class awsTest {
 				"[name] %s, " + 
 				"[id] %s, " +
 				"[type] %s, " +
-				"[state] %10s, ",
+				"[state] %10s",
 				image.getName(),
 				image.getImageId(),
 				image.getImageType(),
